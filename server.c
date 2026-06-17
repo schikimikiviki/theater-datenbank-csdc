@@ -1,13 +1,15 @@
-#define _GNU_SOURCE  // damit kann ich intellisense sagen - verwende GNU / POSIX Erweiterungen (für flags)
+#define _GNU_SOURCE // damit kann ich intellisense sagen - verwende GNU / POSIX
+                    // Erweiterungen (für flags)
+#include <netdb.h>  // getnameinfo
 #include <stdio.h>  // console input/output, perror
 #include <stdlib.h> // exit
 #include <string.h> // string manipulation
-#include <netdb.h>  // getnameinfo
 
-#include <sys/socket.h> // socket APIs
 #include <netinet/in.h> // sockaddr_in
+#include <sys/socket.h> // socket APIs
 #include <unistd.h>     // open, close
 
+#include <libpq-fe.h>
 #include <signal.h> // signal handling
 #include <time.h>   // time
 
@@ -45,18 +47,30 @@ int serverSocket;
 int clientSocket;
 
 char *request;
+PGconn *conn = NULL;
 
-int main()
-{
+int main() {
+
+  // datenbankverbindung aufbauen
+  conn = PQconnectdb(
+      "user=postgres password=postgres host=127.0.0.1 dbname=theater");
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    fprintf(stderr, "DB connection failed: %s\n", PQerrorMessage(conn));
+    PQfinish(conn);
+    return 1;
+  }
 
   // register signal handler
   signal(SIGINT, handleSignal);
 
   // server internet socket address
   struct sockaddr_in serverAddress;
-  serverAddress.sin_family = AF_INET;                     // IPv4
-  serverAddress.sin_port = htons(PORT);                   // port number in network byte order (host-to-network short)
-  serverAddress.sin_addr.s_addr = htonl(INADDR_LOOPBACK); // localhost (host to network long)
+  serverAddress.sin_family = AF_INET; // IPv4
+  serverAddress.sin_port =
+      htons(PORT); // port number in network byte order (host-to-network short)
+  serverAddress.sin_addr.s_addr =
+      htonl(INADDR_LOOPBACK); // localhost (host to network long)
 
   // socket of type IPv4 using TCP protocol
   serverSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -65,22 +79,21 @@ int main()
   setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
   // bind socket to address
-  if (bind(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
-  {
+  if (bind(serverSocket, (struct sockaddr *)&serverAddress,
+           sizeof(serverAddress)) < 0) {
     printf("Error: The server is not bound to the address.\n");
     return 1;
   }
 
   // listen for connections
-  if (listen(serverSocket, BACKLOG) < 0)
-  {
+  if (listen(serverSocket, BACKLOG) < 0) {
     printf("Error: The server is not listening.\n");
     return 1;
   }
 
-  // Hier wird Speicher reserviert: 
+  // Hier wird Speicher reserviert:
   // NI_MAXHOST ≈ 1025
-// NI_MAXSERV ≈ 32
+  // NI_MAXSERV ≈ 32
   char hostBuffer[NI_MAXHOST];
   char serviceBuffer[NI_MAXSERV];
 
@@ -89,19 +102,19 @@ int main()
   // setzt man das auf 0, hat man irgendeinen komischen alias namen in der URL
   // der auf den Port gemapped ist
 
-  int error = getnameinfo((struct sockaddr *)&serverAddress, sizeof(serverAddress), hostBuffer,
-                          sizeof(hostBuffer), serviceBuffer, sizeof(serviceBuffer), NI_NUMERICSERV);
+  int error = getnameinfo((struct sockaddr *)&serverAddress,
+                          sizeof(serverAddress), hostBuffer, sizeof(hostBuffer),
+                          serviceBuffer, sizeof(serviceBuffer), NI_NUMERICSERV);
 
-  if (error != 0)
-  {
+  if (error != 0) {
     printf("Error: %s\n", gai_strerror(error));
     return 1;
   }
 
-  printf("\nServer is listening on http://%s:%s/\n\n", hostBuffer, serviceBuffer);
+  printf("\nServer is listening on http://%s:%s/\n\n", hostBuffer,
+         serviceBuffer);
 
-  while (1)
-  {
+  while (1) {
     // buffer to store data (request)
     request = (char *)malloc(SIZE * sizeof(char));
     char method[10], route[100];
@@ -117,13 +130,10 @@ int main()
     free(request);
 
     // only support GET method
-    if (strcmp(method, "GET") != 0)
-    {
+    if (strcmp(method, "GET") != 0) {
       const char response[] = "HTTP/1.1 400 Bad Request\r\n\n";
       send(clientSocket, response, sizeof(response), 0);
-    }
-    else
-    {
+    } else {
       char fileURL[100];
 
       // generate file URL
@@ -131,13 +141,10 @@ int main()
 
       // read file
       FILE *file = fopen(fileURL, "r");
-      if (!file)
-      {
+      if (!file) {
         const char response[] = "HTTP/1.1 404 Not Found\r\n\n";
         send(clientSocket, response, sizeof(response), 0);
-      }
-      else
-      {
+      } else {
         // generate HTTP response header
         char resHeader[SIZE];
 
@@ -149,7 +156,9 @@ int main()
         char mimeType[32];
         getMimeType(fileURL, mimeType);
 
-        sprintf(resHeader, "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n", timeBuf, mimeType);
+        sprintf(resHeader,
+                "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n",
+                timeBuf, mimeType);
         int headerSize = strlen(resHeader);
 
         printf(" %s", mimeType);
@@ -159,7 +168,8 @@ int main()
         long fsize = ftell(file);
         fseek(file, 0, SEEK_SET);
 
-        // Allocates memory for response buffer and copies response header and file contents to it
+        // Allocates memory for response buffer and copies response header and
+        // file contents to it
         char *resBuffer = (char *)malloc(fsize + headerSize);
         strcpy(resBuffer, resHeader);
 
@@ -173,24 +183,23 @@ int main()
       }
     }
     close(clientSocket);
+
     printf("\n");
   }
 }
 
 // wir übergeben hier pointer zu den Strings statt ganze Strings
-// => das ist effizienter, weil man nur die Addresse des ersten Zeichens des Strings
-// übergeben muss!
+// => das ist effizienter, weil man nur die Addresse des ersten Zeichens des
+// Strings übergeben muss!
 
-void getFileURL(char *route, char *fileURL)
-{
+void getFileURL(char *route, char *fileURL) {
   // if route has parameters, remove them
   char *question = strrchr(route, '?');
   if (question)
     *question = '\0';
 
   // if route is empty, set it to index.html
-  if (route[strlen(route) - 1] == '/')
-  {
+  if (route[strlen(route) - 1] == '/') {
     strcat(route, "index.html");
   }
 
@@ -200,14 +209,12 @@ void getFileURL(char *route, char *fileURL)
 
   // if filename does not have an extension, set it to .html
   const char *dot = strrchr(fileURL, '.');
-  if (!dot || dot == fileURL)
-  {
+  if (!dot || dot == fileURL) {
     strcat(fileURL, ".html");
   }
 }
 
-void getMimeType(char *file, char *mime)
-{
+void getMimeType(char *file, char *mime) {
   // position in string with period character
   const char *dot = strrchr(file, '.');
 
@@ -237,14 +244,14 @@ void getMimeType(char *file, char *mime)
     strcpy(mime, "text/html");
 }
 
-void handleSignal(int signal)
-{
-  if (signal == SIGINT)
-  {
+void handleSignal(int signal) {
+  if (signal == SIGINT) {
     printf("\nShutting down server...\n");
 
     close(clientSocket);
     close(serverSocket);
+
+    PQfinish(conn);
 
     if (request != NULL)
       free(request);
@@ -253,8 +260,7 @@ void handleSignal(int signal)
   }
 }
 
-void getTimeString(char *buf)
-{
+void getTimeString(char *buf) {
   time_t now = time(0);
   struct tm tm = *gmtime(&now);
   strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
