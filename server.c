@@ -9,6 +9,7 @@
 #include <sys/socket.h> // socket APIs
 #include <unistd.h>     // open, close
 
+#include "database.h"
 #include <libpq-fe.h>
 #include <signal.h> // signal handling
 #include <time.h>   // time
@@ -123,6 +124,11 @@ int main() {
     clientSocket = accept(serverSocket, NULL, NULL);
     read(clientSocket, request, SIZE);
 
+    if (clientSocket < 0) {
+      perror("accept");
+      continue;
+    }
+
     // parse HTTP request
     sscanf(request, "%s %s", method, route);
     printf("%s %s", method, route);
@@ -134,6 +140,10 @@ int main() {
       const char response[] = "HTTP/1.1 400 Bad Request\r\n\n";
       send(clientSocket, response, sizeof(response), 0);
     } else {
+      printf("HIER");
+
+      // sonst route manuell zambauen
+
       char fileURL[100];
 
       // generate file URL
@@ -144,43 +154,43 @@ int main() {
       if (!file) {
         const char response[] = "HTTP/1.1 404 Not Found\r\n\n";
         send(clientSocket, response, sizeof(response), 0);
-      } else {
-        // generate HTTP response header
-        char resHeader[SIZE];
-
-        // get current time
-        char timeBuf[100];
-        getTimeString(timeBuf);
-
-        // generate mime type from file URL
-        char mimeType[32];
-        getMimeType(fileURL, mimeType);
-
-        sprintf(resHeader,
-                "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n",
-                timeBuf, mimeType);
-        int headerSize = strlen(resHeader);
-
-        printf(" %s", mimeType);
-
-        // Calculate file size
-        fseek(file, 0, SEEK_END);
-        long fsize = ftell(file);
-        fseek(file, 0, SEEK_SET);
-
-        // Allocates memory for response buffer and copies response header and
-        // file contents to it
-        char *resBuffer = (char *)malloc(fsize + headerSize);
-        strcpy(resBuffer, resHeader);
-
-        // Starting position of file contents in response buffer
-        char *fileBuffer = resBuffer + headerSize;
-        fread(fileBuffer, fsize, 1, file);
-
-        send(clientSocket, resBuffer, fsize + headerSize, 0);
-        free(resBuffer);
-        fclose(file);
       }
+
+      // generate HTTP response header
+      char resHeader[SIZE];
+
+      // get current time
+      char timeBuf[100];
+      getTimeString(timeBuf);
+
+      // generate mime type from file URL
+      char mimeType[32];
+      getMimeType(fileURL, mimeType);
+
+      sprintf(resHeader,
+              "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n", timeBuf,
+              mimeType);
+      int headerSize = strlen(resHeader);
+
+      printf(" %s", mimeType);
+
+      // Calculate file size
+      fseek(file, 0, SEEK_END);
+      long fsize = ftell(file);
+      fseek(file, 0, SEEK_SET);
+
+      // Allocates memory for response buffer and copies response header and
+      // file contents to it
+      char *resBuffer = (char *)malloc(fsize + headerSize);
+      strcpy(resBuffer, resHeader);
+
+      // Starting position of file contents in response buffer
+      char *fileBuffer = resBuffer + headerSize;
+      fread(fileBuffer, fsize, 1, file);
+
+      send(clientSocket, resBuffer, fsize + headerSize, 0);
+      free(resBuffer);
+      fclose(file);
     }
     close(clientSocket);
 

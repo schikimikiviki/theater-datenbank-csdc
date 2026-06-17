@@ -1,5 +1,9 @@
 #include <libpq-fe.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h> // socket APIs
+#include <unistd.h>
 
 static void terminate(int code, PGresult *res, PGconn *conn) {
   if (code != 0)
@@ -14,7 +18,9 @@ static void terminate(int code, PGresult *res, PGconn *conn) {
   exit(code);
 }
 
-void getAllShows(PGconn *conn) {
+void getAllShows(PGconn *conn, int clientSocket) {
+
+  printf("DEBUG: entered getAllShows\n");
 
   PGresult *res = NULL;
 
@@ -24,10 +30,22 @@ void getAllShows(PGconn *conn) {
     terminate(1, res, conn);
   }
 
-  // for (int col = 0; col < cols; col++) {
+  //   int cols = PQnfields(res);
+  int rows = PQntuples(res);
+  char buffer[1024]; // Zwischenspeicher den wir definieren
 
-  //   char *value = PQgetvalue(res, 0, col);
-  // }
+  for (int i = 0; i < rows; i++) {
+    char *datum = PQgetvalue(res, i, 0);
+    char *uhrzeit = PQgetvalue(res, i, 1);
+    // char *regisseur = PQgetvalue(res, i, 2);
+    // char *budget = PQgetvalue(res, i, 3);
+    // char *name = PQgetvalue(res, i, 4);
+
+    snprintf(buffer, sizeof(buffer), "<tr><td>%s</td><td>%s</td></tr>", datum,
+             uhrzeit);
+
+    send(clientSocket, buffer, strlen(buffer), 0);
+  }
 
   PQclear(res);
 }
