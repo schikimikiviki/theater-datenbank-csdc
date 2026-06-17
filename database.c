@@ -20,8 +20,6 @@ static void terminate(int code, PGresult *res, PGconn *conn) {
 
 void getAllShows(PGconn *conn, int clientSocket) {
 
-  printf("DEBUG: entered getAllShows\n");
-
   PGresult *res = NULL;
 
   res = PQexec(conn, "SELECT * from auffuehrung;");
