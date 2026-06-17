@@ -1,3 +1,4 @@
+#define _GNU_SOURCE  // damit kann ich intellisense sagen - verwende GNU / POSIX Erweiterungen (für flags)
 #include <stdio.h>  // console input/output, perror
 #include <stdlib.h> // exit
 #include <string.h> // string manipulation
@@ -77,10 +78,19 @@ int main()
     return 1;
   }
 
-  // get server address information
-  char hostBuffer[NI_MAXHOST], serviceBuffer[NI_MAXSERV];
+  // Hier wird Speicher reserviert: 
+  // NI_MAXHOST ≈ 1025
+// NI_MAXSERV ≈ 32
+  char hostBuffer[NI_MAXHOST];
+  char serviceBuffer[NI_MAXSERV];
+
+  // getnameinfo ist eine Funktion aus netdb.h und wird vom OS bereitgestellt
+  // die flag NI_NUMERICSERV steht für den numerischen Wert vom Port
+  // setzt man das auf 0, hat man irgendeinen komischen alias namen in der URL
+  // der auf den Port gemapped ist
+
   int error = getnameinfo((struct sockaddr *)&serverAddress, sizeof(serverAddress), hostBuffer,
-                          sizeof(hostBuffer), serviceBuffer, sizeof(serviceBuffer), 0);
+                          sizeof(hostBuffer), serviceBuffer, sizeof(serviceBuffer), NI_NUMERICSERV);
 
   if (error != 0)
   {
@@ -166,6 +176,10 @@ int main()
     printf("\n");
   }
 }
+
+// wir übergeben hier pointer zu den Strings statt ganze Strings
+// => das ist effizienter, weil man nur die Addresse des ersten Zeichens des Strings
+// übergeben muss!
 
 void getFileURL(char *route, char *fileURL)
 {

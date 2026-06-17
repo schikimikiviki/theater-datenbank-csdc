@@ -15,3 +15,17 @@ Wir haben eine kleine postgres Datenbank, die mit Testdaten befüllt ist. Wir m�
 - Webserver mit C (see: https://github.com/nipunchamikara/c-web-server/tree/main/htdocs)
 - postgres Datenbank und libpq für die C Anbindung
 - GUI mit HTML, CSS, JS
+
+## Usage
+
+Mit diesem Command können wir kompilieren:
+
+```
+make build
+```
+
+Mit diesem können wir den Server auch sofort starten:
+
+```
+make run
+```
