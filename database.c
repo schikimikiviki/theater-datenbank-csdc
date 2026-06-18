@@ -35,12 +35,19 @@ void getAllShows(PGconn *conn, int clientSocket) {
   for (int i = 0; i < rows; i++) {
     char *datum = PQgetvalue(res, i, 0);
     char *uhrzeit = PQgetvalue(res, i, 1);
-    // char *regisseur = PQgetvalue(res, i, 2);
-    // char *budget = PQgetvalue(res, i, 3);
-    // char *name = PQgetvalue(res, i, 4);
+    char *regisseur = PQgetvalue(res, i, 2);
+    char *budget = PQgetvalue(res, i, 3);
+    char *name = PQgetvalue(res, i, 4);
 
-    snprintf(buffer, sizeof(buffer), "<tr><td>%s</td><td>%s</td></tr>", datum,
-             uhrzeit);
+    snprintf(buffer, sizeof(buffer),
+             "<tr>"
+             "<td><a href=\"/login.html?auffuehrung=%s\">%s</a></td>"
+             "<td>%s</td>"
+             "<td>%s</td>"
+             "<td>%s</td>"
+             "<td>%s</td>"
+             "</tr>",
+             name, name, datum, uhrzeit, regisseur, budget);
 
     send(clientSocket, buffer, strlen(buffer), 0);
   }

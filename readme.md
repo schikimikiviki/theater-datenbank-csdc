@@ -29,3 +29,12 @@ Mit diesem können wir den Server auch sofort starten:
 ```
 make run
 ```
+
+## Falls Änderungen nicht angezeigt werden
+
+```
+rm server
+```
+```
+make run
+```

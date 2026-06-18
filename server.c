@@ -9,10 +9,13 @@
 #include <sys/socket.h> // socket APIs
 #include <unistd.h>     // open, close
 
+// unsere files einbinden
 #include "database.h"
-#include <libpq-fe.h>
-#include <signal.h> // signal handling
-#include <time.h>   // time
+#include "session.h"
+
+#include <libpq-fe.h> // das ist für die postgres anbindung
+#include <signal.h>   // signal handling
+#include <time.h>     // time
 
 #define SIZE 1024  // buffer size
 #define PORT 8080  // port number
@@ -44,25 +47,15 @@ void handleSignal(int signal);
  */
 void getTimeString(char *buf);
 
+void sendFileToClient(int clientSocket, const char *filepath);
+
+void sendHTTPHeader(int clientSocket);
+
 int serverSocket;
 int clientSocket;
 
 char *request;
 PGconn *conn = NULL;
-
-void sendFileToClient(int clientSocket, const char *filepath) {
-  FILE *file = fopen(filepath, "r");
-  if (!file)
-    return;
-  fseek(file, 0, SEEK_END);
-  long fsize = ftell(file);
-  fseek(file, 0, SEEK_SET);
-  char *buf = malloc(fsize);
-  fread(buf, fsize, 1, file);
-  send(clientSocket, buf, fsize, 0);
-  free(buf);
-  fclose(file);
-}
 
 int main() {
 
@@ -75,6 +68,9 @@ int main() {
     PQfinish(conn);
     return 1;
   }
+
+  // Session aufbauen damit wir später Daten speichern können
+  Session session;
 
   // register signal handler
   signal(SIGINT, handleSignal);
@@ -155,16 +151,25 @@ int main() {
       send(clientSocket, response, sizeof(response), 0);
     } else {
 
-      if (strcmp(route, "/auffuehrungen") == 0 ||
-          strcmp(route, "/auffuehrungen.html") == 0) {
-        // HTTP-Header senden
-        char timeBuf[100];
-        getTimeString(timeBuf);
-        char resHeader[SIZE];
-        sprintf(resHeader,
-                "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\n",
-                timeBuf);
-        send(clientSocket, resHeader, strlen(resHeader), 0);
+      // hier zuerst Parameter rausballern, strchr ist wie split() und gibt
+      // pointer zurück
+      char *query = strchr(route, '?');
+
+      if (query != NULL) {
+        *query = '\0'; // route endet jetzt bei '?'
+        query++;       // zeigt auf "name=Hamlet"
+      }
+
+      if (strcmp(route, "/index") == 0 || strcmp(route, "/index.html") == 0 ||
+          strcmp(route, "/") == 0) {
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/index.html");
+      } else if (strcmp(route, "/auffuehrungen") == 0 ||
+                 strcmp(route, "/auffuehrungen.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
 
         // Header-HTML
         sendFileToClient(clientSocket, "htdocs/auffuehrungen-header.html");
@@ -175,58 +180,74 @@ int main() {
         // Footer-HTML
         sendFileToClient(clientSocket, "htdocs/auffuehrungen-footer.html");
 
+      } else if (strcmp(route, "/login") == 0 ||
+                 strcmp(route, "/login.html") == 0) {
+
+        // hier Name aus der URL parsen
+
+        // wir haben hier jetzt query = "auffuehrung=Hamlet"
+        strcpy(session.auffuehrungName,
+               query); // wir kopieren den String in die Session
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/login.html");
+
       } else {
+
+        // TODO: hier default seite anzeigen stattdessen
 
         // sonst route manuell zambauen
 
-        char fileURL[100];
+        // char fileURL[100];
 
-        // generate file URL
-        getFileURL(route, fileURL);
+        // // generate file URL
+        // getFileURL(route, fileURL);
 
-        // read file
-        FILE *file = fopen(fileURL, "r");
-        if (!file) {
-          const char response[] = "HTTP/1.1 404 Not Found\r\n\n";
-          send(clientSocket, response, sizeof(response), 0);
-          continue;
-        }
+        // // read file
+        // FILE *file = fopen(fileURL, "r");
+        // if (!file) {
+        //   const char response[] = "HTTP/1.1 404 Not Found\r\n\n";
+        //   send(clientSocket, response, sizeof(response), 0);
+        //   continue;
+        // }
 
-        // generate HTTP response header
-        char resHeader[SIZE];
+        // // generate HTTP response header
+        // char resHeader[SIZE];
 
-        // get current time
-        char timeBuf[100];
-        getTimeString(timeBuf);
+        // // get current time
+        // char timeBuf[100];
+        // getTimeString(timeBuf);
 
-        // generate mime type from file URL
-        char mimeType[32];
-        getMimeType(fileURL, mimeType);
+        // // generate mime type from file URL
+        // char mimeType[32];
+        // getMimeType(fileURL, mimeType);
 
-        sprintf(resHeader,
-                "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n",
-                timeBuf, mimeType);
-        int headerSize = strlen(resHeader);
+        // sprintf(resHeader,
+        //         "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n",
+        //         timeBuf, mimeType);
+        // int headerSize = strlen(resHeader);
 
-        printf(" %s", mimeType);
+        // printf(" %s", mimeType);
 
-        // Calculate file size
-        fseek(file, 0, SEEK_END);
-        long fsize = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        // // Calculate file size
+        // fseek(file, 0, SEEK_END);
+        // long fsize = ftell(file);
+        // fseek(file, 0, SEEK_SET);
 
-        // Allocates memory for response buffer and copies response header and
-        // file contents to it
-        char *resBuffer = (char *)malloc(fsize + headerSize);
-        strcpy(resBuffer, resHeader);
+        // // Allocates memory for response buffer and copies response
+        // header and
+        // // file contents to it
+        // char *resBuffer = (char *)malloc(fsize + headerSize);
+        // strcpy(resBuffer, resHeader);
 
-        // Starting position of file contents in response buffer
-        char *fileBuffer = resBuffer + headerSize;
-        fread(fileBuffer, fsize, 1, file);
+        // // Starting position of file contents in response buffer
+        // char *fileBuffer = resBuffer + headerSize;
+        // fread(fileBuffer, fsize, 1, file);
 
-        send(clientSocket, resBuffer, fsize + headerSize, 0);
-        free(resBuffer);
-        fclose(file);
+        // send(clientSocket, resBuffer, fsize + headerSize, 0);
+        // free(resBuffer);
+        // fclose(file);
       }
     }
     close(clientSocket);
@@ -311,4 +332,29 @@ void getTimeString(char *buf) {
   time_t now = time(0);
   struct tm tm = *gmtime(&now);
   strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+}
+
+void sendFileToClient(int clientSocket, const char *filepath) {
+  FILE *file = fopen(filepath, "r");
+  if (!file)
+    return;
+  fseek(file, 0, SEEK_END);
+  long fsize = ftell(file);
+  fseek(file, 0, SEEK_SET);
+  char *buf = malloc(fsize);
+  fread(buf, fsize, 1, file);
+  send(clientSocket, buf, fsize, 0);
+  free(buf);
+  fclose(file);
+}
+
+void sendHTTPHeader(int clientSocket) {
+  // Funktion die HTTP-Header sendet
+  char timeBuf[100];
+  getTimeString(timeBuf);
+  char resHeader[SIZE];
+  sprintf(resHeader,
+          "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\n",
+          timeBuf);
+  send(clientSocket, resHeader, strlen(resHeader), 0);
 }
