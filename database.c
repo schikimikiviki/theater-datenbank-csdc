@@ -55,6 +55,40 @@ void getAllShows(PGconn *conn, int clientSocket) {
   PQclear(res);
 }
 
+int getIsRegistered(int kundenNummer, PGconn *conn) {
+  PGresult *res = NULL;
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    terminate(1, res, conn);
+  }
+
+  const char *query = "SELECT * from besucher WHERE Kundennummer = $1";
+
+  char snum[32]; // char array für die kundennr
+  snprintf(snum, sizeof(snum), "%d", kundenNummer); // umwandlung in string
+
+  const char *params[1] = {snum}; // hier müssen immer strings übergeben werden
+
+  res = PQexecParams(conn, query, 1, NULL, params, NULL, NULL, 0);
+
+  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+    terminate(1, res, conn);
+  }
+
+  int rows = PQntuples(res);
+  PQclear(res);
+
+  if (rows == 1) {
+    // diese Abfrage macht nur Sinn wenn 1 Zeile zurückkommt
+    // ===> er existiert in der Datenbank
+    return 1;
+
+  } else {
+
+    return 0;
+  }
+}
+
 int getSvnrByKundennummer(int kundenNummer, PGconn *conn) {
 
   PGresult *res = NULL;

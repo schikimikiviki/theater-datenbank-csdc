@@ -11,6 +11,7 @@
 
 // unsere files einbinden
 #include "database.h"
+#include "helpers.h"
 #include "session.h"
 
 #include <libpq-fe.h> // das ist für die postgres anbindung
@@ -183,15 +184,42 @@ int main() {
       } else if (strcmp(route, "/login") == 0 ||
                  strcmp(route, "/login.html") == 0) {
 
-        // hier Name aus der URL parsen
+        // hier Parameter aus der URL parsen
+        // Achtung:
+        // es werden hier 2 Arten von Parametern übergeben:
+        // erstens, wenn wir von der "aufführungsseite" auf das Login kommen,
+        // dann haben wir "auffuehrung=Hamlet"
+        // zweitens, wenn wir das Feld mit der Kundennummer ausfüllen
+        // und dann haben wir "kundenID=123"
 
-        // wir haben hier jetzt query = "auffuehrung=Hamlet"
-        strcpy(session.auffuehrungName,
-               query); // wir kopieren den String in die Session
+        char *param = strchr(query, '=');
+
+        if (param != NULL) {
+          *param = '\0'; // query endet jetzt bei '='
+          param++;       // zeigt auf "=Hamlet"
+        }
+
+        // wir prüfen womit die query startet um das zu differenzieren:
+        if (startsWith(query, "auffuehrung")) {
+
+          strcpy(session.auffuehrungName,
+                 param); // wir kopieren den String in die Session
+        } else if (startsWith(query, "kundenID")) {
+
+          session.kundenNummer =
+              atoi(param); // wir kopieren den int in die Session
+
+          // hier müssen wir jetzt prüfen ob das eine valide Kundennummer ist
+        }
 
         sendHTTPHeader(clientSocket);
 
-        sendFileToClient(clientSocket, "htdocs/login.html");
+        sendFileToClient(clientSocket, "htdocs/login-header.html");
+
+        // formulareingaben holen
+        getFieldData(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/login-footer.html");
 
       } else {
 
