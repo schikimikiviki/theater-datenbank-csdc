@@ -333,6 +333,13 @@ int main() {
         sendFileToClient(clientSocket, "htdocs/success-header.html");
         renderSuccess(clientSocket, session);
         sendFileToClient(clientSocket, "htdocs/success-footer.html");
+      } else if (startsWith(route, "/static/images/")) {
+        char path[512];
+
+        snprintf(path, sizeof(path), "htdocs%s", route);
+
+        sendImageHeader(clientSocket);
+        sendFileToClient(clientSocket, path);
       } else {
 
         // hier default seite anzeigen

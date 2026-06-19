@@ -13,5 +13,6 @@ void createSeatNumbers(int clientSocket, PGconn *conn);
 void renderReservation(int clientSocket, Session session);
 int generateRandomNumber();
 void renderSuccess(int clientSocket, Session session);
+void sendImageHeader(int clientSocket);
 
 #endif

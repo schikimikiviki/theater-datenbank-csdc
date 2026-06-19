@@ -5,6 +5,22 @@
    font-family: "Roboto", sans-serif;
 }
 
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+}
+
+.body-main{
+    background-color: aquamarine;
+}
+
+.body-description {
+    font-size: 18px;
+    text-align: justify;
+}
+
 body {
     margin: 2%;
     font-size: 18px;

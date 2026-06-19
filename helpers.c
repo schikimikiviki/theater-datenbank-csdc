@@ -50,6 +50,16 @@ void sendCSSHeader(int clientSocket) {
   send(clientSocket, resHeader, strlen(resHeader), 0);
 }
 
+void sendImageHeader(int clientSocket) {
+  char timeBuf[100];
+  getTimeString(timeBuf);
+  char resHeader[SIZE];
+  sprintf(resHeader,
+          "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: image/jpeg\r\n\n",
+          timeBuf);
+  send(clientSocket, resHeader, strlen(resHeader), 0);
+}
+
 void sendFileToClient(int clientSocket, const char *filepath) {
   FILE *file = fopen(filepath, "r");
   if (!file)
