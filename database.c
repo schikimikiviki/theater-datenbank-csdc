@@ -3,7 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h> // socket APIs
+#include <time.h>
 #include <unistd.h>
+
+#include "helpers.h"
+#include "session.h"
 
 static void terminate(int code, PGresult *res, PGconn *conn) {
   if (code != 0)
@@ -41,13 +45,14 @@ void getAllShows(PGconn *conn, int clientSocket) {
 
     snprintf(buffer, sizeof(buffer),
              "<tr>"
-             "<td><a href=\"/login.html?auffuehrung=%s\">%s</a></td>"
+             "<td><a href=\"/login.html?"
+             "name=%s&datum=%s&uhrzeit=%s\">%s</a></td>"
              "<td>%s</td>"
              "<td>%s</td>"
              "<td>%s</td>"
              "<td>%s</td>"
              "</tr>",
-             name, name, datum, uhrzeit, regisseur, budget);
+             name, datum, uhrzeit, name, datum, uhrzeit, regisseur, budget);
 
     send(clientSocket, buffer, strlen(buffer), 0);
   }
@@ -155,4 +160,47 @@ int getSvnrByKundennummer(int kundenNummer, PGconn *conn) {
   return svnr;
 }
 
-// sonst:  if (PQresultStatus(res) != PGRES_COMMAND_OK) wenn POST, UPDATE
+int makeReservation(Session session, PGconn *conn) {
+  PGresult *res = NULL;
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    terminate(1, res, conn);
+  }
+
+  // random reservierungsnummer generieren
+  int reservierungsNum = generateRandomNumber();
+
+  const char *query =
+      "INSERT INTO reservierung (reservierungsnummer, "
+      "sitzplatz, besucher_id, datum, uhrzeit) VALUES($1, $2, $3, $4, $5)";
+
+  char snum[32]; // char array für die svnr
+  snprintf(snum, sizeof(snum), "%d", reservierungsNum); // umwandlung in string
+
+  // time_t now = time(NULL);
+  // struct tm *t = localtime(&now);
+
+  // char datum[11];
+  // char uhrzeit[9];
+
+  // strftime(datum, sizeof(datum), "%Y-%m-%d", t);
+  // strftime(uhrzeit, sizeof(uhrzeit), "%H:%M:%S", t);
+
+  char kundenNummer[32];
+  snprintf(kundenNummer, sizeof(kundenNummer), "%d", session.kundenNummer);
+
+  const char *params[5] = {
+      snum, session.sitzplatz, kundenNummer, session.datumAuffuehrung,
+      session.uhrzeitAuffuehrung}; // hier müssen immer strings übergeben werden
+
+  res = PQexecParams(conn, query, 5, NULL, params, NULL, NULL, 0);
+
+  if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+    terminate(1, res, conn);
+    return 0;
+
+  } else {
+    PQclear(res);
+    return reservierungsNum;
+  }
+}

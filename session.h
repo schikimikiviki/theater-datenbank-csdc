@@ -6,8 +6,10 @@ typedef struct {
   char auffuehrungName[100];
   int loggedIn;
   int kundenNummer;
-  int sitzplatz;
+  char sitzplatz[4];
   int reservierungsNummer;
+  char datumAuffuehrung[11];
+  char uhrzeitAuffuehrung[9];
 
 } Session;
 

@@ -6,6 +6,7 @@
 #include <time.h> // time
 
 #include "database.h"
+#include "session.h"
 
 #define SIZE 1024 // buffer size
 #define ROWS 8
@@ -152,4 +153,54 @@ void createSeatNumbers(int clientSocket, PGconn *conn) {
   }
 
   send(clientSocket, "</table>\n", 10, 0);
+}
+
+void renderReservation(int clientSocket, Session session) {
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  // in der Session haben wir jetzt alle Informationen, die wir brauchen
+  // außer Reservierungsnummer => reservierung wurde noch nicht gemacht
+
+  char decodedAuffuehrung[100];
+
+  urlDecode(session.auffuehrungName, decodedAuffuehrung);
+
+  snprintf(buffer, sizeof(buffer), "<p>Aufführung:  %s</p>\n",
+           decodedAuffuehrung);
+  send(clientSocket, buffer, strlen(buffer), 0);
+  snprintf(buffer, sizeof(buffer), "<p>Kundennummer:  %d</p>\n",
+           session.kundenNummer);
+  send(clientSocket, buffer, strlen(buffer), 0);
+  snprintf(buffer, sizeof(buffer), "<p>Sitzplatz:  %s</p>\n",
+           session.sitzplatz);
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  snprintf(buffer, sizeof(buffer),
+           "<form action=\"/reservierung-machen\" method=\"GET\">");
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  snprintf(buffer, sizeof(buffer),
+           "<input type=\"submit\" value=\"Reservieren\">");
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  snprintf(buffer, sizeof(buffer), "</form>");
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  // wenn das abgeschickt wird, bekommen wir /reservieren
+}
+
+int generateRandomNumber() { return rand() % 1000000 + 1; }
+
+void renderSuccess(int clientSocket, Session session) {
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  char decodedName[100];
+  urlDecode(session.auffuehrungName, decodedName);
+
+  snprintf(buffer, sizeof(buffer),
+           "<p>Sie haben gebucht:<br>Aufführung: %s am %s, um %s<br>Sitzplatz: "
+           "%s<br><b>Ihre Reservierungsnummer lautet: %d</b></p>",
+           decodedName, session.datumAuffuehrung, session.uhrzeitAuffuehrung,
+           session.sitzplatz, session.reservierungsNummer);
+  send(clientSocket, buffer, strlen(buffer), 0);
 }

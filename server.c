@@ -64,7 +64,10 @@ int main() {
   }
 
   // Session aufbauen damit wir später Daten speichern können
-  Session session;
+  Session session; // TODO: session ID setzen
+
+  // zufallsgenerator für IDs initialisieren => sonst immer dieselben
+  srand((unsigned)time(NULL));
 
   // register signal handler
   signal(SIGINT, handleSignal);
@@ -188,51 +191,66 @@ int main() {
         // Achtung:
         // es werden hier 2 Arten von Parametern übergeben:
         // erstens, wenn wir von der "aufführungsseite" auf das Login kommen,
-        // dann haben wir "auffuehrung=Hamlet"
+        // dann haben wir "auffuehrung=Hamlet&time=...&date=..."
         // zweitens, wenn wir das Feld mit der Kundennummer ausfüllen
         // und dann haben wir "kundenID=123"
 
-        char *param = strchr(query, '=');
+        char *token = strtok(query, "&");
+        // wir müssen jetzt auf "&" splitten
 
-        if (param != NULL) {
-          *param = '\0'; // query endet jetzt bei '='
-          param++;       // zeigt auf "=Hamlet"
-        }
+        while (token != NULL) {
 
-        // wir prüfen womit die query startet um das zu differenzieren:
-        if (startsWith(query, "auffuehrung")) {
+          char *value = strchr(token, '=');
 
-          strcpy(session.auffuehrungName,
-                 param); // wir kopieren den String in die Session
-        } else if (startsWith(query, "kundenID")) {
+          if (value != NULL) {
+            *value = '\0';
+            value++;
 
-          int kundenNr = atoi(param); // string zu int
+            if (strcmp(token, "name") == 0) {
 
-          session.kundenNummer = kundenNr;
-          // wir kopieren den int in die Session
+              strcpy(session.auffuehrungName,
+                     value); // wir kopieren den String in die Session
 
-          // hier müssen wir jetzt prüfen ob das eine valide Kundennummer
-          // ist
+            } else if (strcmp(token, "datum") == 0) {
+              strcpy(session.datumAuffuehrung, value);
+            } else if (strcmp(token, "uhrzeit") == 0) {
+              strcpy(session.uhrzeitAuffuehrung, value);
+            } else if (strcmp(token, "kundenID") == 0) {
 
-          int isRegistered = getIsRegistered(kundenNr, conn);
+              int kundenNr = atoi(value);
+              session.kundenNummer =
+                  kundenNr; // wir kopieren den int in die Session
 
-          if (isRegistered) {
-            // wir leiten auf die nächste Seite weiter
-            char response[512];
+              // hier müssen wir jetzt prüfen ob das eine valide Kundennummer
+              // ist
 
-            snprintf(response, sizeof(response),
-                     "HTTP/1.1 302 Found\r\n"
-                     "Location: /sitzplatz.html\r\n"
-                     "Content-Length: 0\r\n"
-                     "\r\n");
+              int isRegistered = getIsRegistered(kundenNr, conn);
 
-            send(clientSocket, response, strlen(response), 0);
+              if (isRegistered) {
 
-          } else {
+                // loggedIn auf true setzen in der session
+                session.loggedIn = 1;
 
-            // TODO: ansonsten kann man sich registrieren
-            // ==> sign up page anzeigen
+                // wir leiten auf die nächste Seite weiter
+                char response[512];
+
+                snprintf(response, sizeof(response),
+                         "HTTP/1.1 302 Found\r\n"
+                         "Location: /sitzplatz.html\r\n"
+                         "Content-Length: 0\r\n"
+                         "\r\n");
+
+                send(clientSocket, response, strlen(response), 0);
+
+              } else {
+
+                // TODO: ansonsten kann man sich registrieren
+                // ==> sign up page anzeigen
+              }
+            }
           }
+
+          token = strtok(NULL, "&");
         }
 
         sendHTTPHeader(clientSocket);
@@ -259,15 +277,63 @@ int main() {
       } else if (strcmp(route, "/reservierung") == 0 ||
                  strcmp(route, "/reservierung.html") == 0) {
 
+        // parameter parsen
+        char *param = strchr(query, '=');
+
+        if (param != NULL) {
+          *param = '\0'; // query endet jetzt bei '='
+          param++;       // zeigt auf "A01"
+        }
+
+        strcpy(session.sitzplatz,
+               param); // wir kopieren den String in die Session
+
         sendHTTPHeader(clientSocket);
 
         sendFileToClient(clientSocket, "htdocs/reservierung-header.html");
 
+        renderReservation(clientSocket, session);
+
         sendFileToClient(clientSocket, "htdocs/reservierung-footer.html");
 
-      }
+      } else if (strcmp(route, "/reservierung-machen") == 0 ||
+                 strcmp(route, "/reservierung-machen.html") == 0) {
 
-      else {
+        // zuerst machen wir den db request
+        // je nachdem, ob das klappt, zeigen wir verschiedene inhalte an
+
+        int reservationNum = makeReservation(session, conn);
+
+        if (reservationNum != 0) {
+          // Null steht hier für fehlgeschlagen
+          // success seite anzeigen + reservierungsnummer
+
+          printf("RESERVIERUNG ERFOLGREICH: %d", reservationNum);
+          session.reservierungsNummer = reservationNum;
+          char response[512];
+          snprintf(response, sizeof(response),
+                   "HTTP/1.1 302 Found\r\n"
+                   "Location: /reservierung-erfolgreich?nummer=%d\r\n"
+                   "Content-Length: 0\r\n"
+                   "\r\n",
+                   reservationNum);
+          send(clientSocket, response, strlen(response), 0);
+        } else {
+          // Fehlermeldung wenns nicht geklappt hat & auf startseite
+          // zurückleiten
+          sendHTTPHeader(clientSocket);
+
+          sendFileToClient(clientSocket, "htdocs/error.html");
+        }
+
+      } else if (strcmp(route, "/reservierung-erfolgreich") == 0 ||
+                 strcmp(route, "/reservierung-erfolgreich.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
+        sendFileToClient(clientSocket, "htdocs/success-header.html");
+        renderSuccess(clientSocket, session);
+        sendFileToClient(clientSocket, "htdocs/success-footer.html");
+      } else {
 
         // hier default seite anzeigen
 
