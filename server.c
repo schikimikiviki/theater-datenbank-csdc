@@ -41,13 +41,6 @@ void getMimeType(char *file, char *mime);
  */
 void handleSignal(int signal);
 
-/**
- * @brief Returns a string with the current time in HTTP response date format
- * @param buf buffer to store the time string
- * https://stackoverflow.com/questions/7548759/generate-a-date-string-in-http-response-date-format-in-c
- */
-void getTimeString(char *buf);
-
 void sendFileToClient(int clientSocket, const char *filepath);
 
 void sendHTTPHeader(int clientSocket);
@@ -161,8 +154,11 @@ int main() {
         query++;       // zeigt auf "name=Hamlet"
       }
 
-      if (strcmp(route, "/index") == 0 || strcmp(route, "/index.html") == 0 ||
-          strcmp(route, "/") == 0) {
+      if (strcmp(route, "/static/styles.css") == 0) {
+        sendCSSHeader(clientSocket);
+        sendFileToClient(clientSocket, "htdocs/static/styles.css");
+      } else if (strcmp(route, "/index") == 0 ||
+                 strcmp(route, "/index.html") == 0 || strcmp(route, "/") == 0) {
 
         sendHTTPHeader(clientSocket);
 
@@ -354,35 +350,4 @@ void handleSignal(int signal) {
 
     exit(0);
   }
-}
-
-void getTimeString(char *buf) {
-  time_t now = time(0);
-  struct tm tm = *gmtime(&now);
-  strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
-}
-
-void sendFileToClient(int clientSocket, const char *filepath) {
-  FILE *file = fopen(filepath, "r");
-  if (!file)
-    return;
-  fseek(file, 0, SEEK_END);
-  long fsize = ftell(file);
-  fseek(file, 0, SEEK_SET);
-  char *buf = malloc(fsize);
-  fread(buf, fsize, 1, file);
-  send(clientSocket, buf, fsize, 0);
-  free(buf);
-  fclose(file);
-}
-
-void sendHTTPHeader(int clientSocket) {
-  // Funktion die HTTP-Header sendet
-  char timeBuf[100];
-  getTimeString(timeBuf);
-  char resHeader[SIZE];
-  sprintf(resHeader,
-          "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\n",
-          timeBuf);
-  send(clientSocket, resHeader, strlen(resHeader), 0);
 }

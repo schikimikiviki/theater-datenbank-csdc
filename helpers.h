@@ -3,5 +3,8 @@
 
 void getFieldData(int clientSocket);
 int startsWith(const char *a, const char *b);
+void sendCSSHeader(int clientSocket);
+void sendFileToClient(int clientSocket, const char *filepath);
+void sendHTTPHeader(int clientSocket);
 
 #endif
