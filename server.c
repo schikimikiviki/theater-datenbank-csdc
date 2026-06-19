@@ -68,6 +68,7 @@ int main() {
 
   // register signal handler
   signal(SIGINT, handleSignal);
+  signal(SIGPIPE, SIG_IGN);
 
   // server internet socket address
   struct sockaddr_in serverAddress;
@@ -248,6 +249,7 @@ int main() {
         sendFileToClient(clientSocket, "htdocs/sitzplatz-header.html");
 
         renderNameOfShow(session.auffuehrungName, clientSocket);
+        createSeatNumbers(clientSocket, conn);
 
         sendFileToClient(clientSocket, "htdocs/sitzplatz-footer.html");
 

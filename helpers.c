@@ -5,7 +5,11 @@
 #include <sys/socket.h>
 #include <time.h> // time
 
+#include "database.h"
+
 #define SIZE 1024 // buffer size
+#define ROWS 8
+#define COLS 12
 
 /**
  * @brief Returns a string with the current time in HTTP response date format
@@ -108,4 +112,41 @@ void renderNameOfShow(char auffuehrungName[], int clientSocket) {
   snprintf(buffer, sizeof(buffer),
            "<p>Wählen Sie einen Sitzplatz für die Aufführung %s</p>", decoded);
   send(clientSocket, buffer, strlen(buffer), 0);
+}
+
+void createSeatNumbers(int clientSocket, PGconn *conn) {
+
+  send(clientSocket, "<table>\n", 8, 0);
+
+  for (int r = 0; r < ROWS; r++) {
+
+    send(clientSocket, "<tr>", 4, 0);
+
+    for (int c = 1; c <= COLS; c++) {
+
+      char buffer[128];
+      char seat[4];
+
+      snprintf(seat, sizeof(seat), "%c%02d", 'A' + r, c);
+
+      // wir müssen vor dem rendern prüfen ob der Sitzplatz reserviert wurde
+      // oder nicht
+
+      int isReserved = checkSeatAvailability(seat, conn);
+
+      if (isReserved) {
+        snprintf(buffer, sizeof(buffer), "<td style=\"color: red;\">%s</td>",
+                 seat);
+      } else {
+        snprintf(buffer, sizeof(buffer), "<td style=\"color: green;\">%s</td>",
+                 seat);
+      }
+
+      send(clientSocket, buffer, strlen(buffer), 0);
+    }
+
+    send(clientSocket, "</tr>\n", 6, 0);
+  }
+
+  send(clientSocket, "</table>\n", 10, 0);
 }

@@ -6,5 +6,6 @@
 void getAllShows(PGconn *conn, int clientSocket);
 int getSvnrByKundennummer(int kundenNummer, PGconn *conn);
 int getIsRegistered(int kundenNummer, PGconn *conn);
+int checkSeatAvailability(char seatNum[], PGconn *conn);
 
 #endif
