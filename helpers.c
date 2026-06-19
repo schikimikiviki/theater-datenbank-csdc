@@ -135,13 +135,16 @@ void createSeatNumbers(int clientSocket, PGconn *conn) {
       int isReserved = checkSeatAvailability(seat, conn);
 
       if (isReserved) {
-        snprintf(buffer, sizeof(buffer), "<td style=\"color: red;\">%s</td>",
-                 seat);
+        snprintf(buffer, sizeof(buffer),
+                 "<td class=\"seat seat-reserved\">%s</td>", seat);
+        // diese sitzplätze sollen nicht anklickbar sein!
       } else {
-        snprintf(buffer, sizeof(buffer), "<td style=\"color: green;\">%s</td>",
-                 seat);
+        snprintf(buffer, sizeof(buffer),
+                 "<td class=\"seat seat-free\"><a "
+                 "href=\"/reservierung.html?sitzplatz=%s\">%s</a></td>",
+                 seat, seat);
+        // diese schon => weiterleitung auf die reservierungsseite
       }
-
       send(clientSocket, buffer, strlen(buffer), 0);
     }
 

@@ -68,7 +68,10 @@ int main() {
 
   // register signal handler
   signal(SIGINT, handleSignal);
-  signal(SIGPIPE, SIG_IGN);
+  signal(SIGPIPE, SIG_IGN); //
+  // Standardverhalten von SIGPIPE: Prozess sofort beenden – ohne Fehlermeldung
+  // notwendig wenn wir viele Db abfragen hintereinander machen
+  // sig_ign heißt "ignore"
 
   // server internet socket address
   struct sockaddr_in serverAddress;
@@ -253,63 +256,24 @@ int main() {
 
         sendFileToClient(clientSocket, "htdocs/sitzplatz-footer.html");
 
+      } else if (strcmp(route, "/reservierung") == 0 ||
+                 strcmp(route, "/reservierung.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/reservierung-header.html");
+
+        sendFileToClient(clientSocket, "htdocs/reservierung-footer.html");
+
       }
 
       else {
 
-        // TODO: hier default seite anzeigen stattdessen
+        // hier default seite anzeigen
 
-        // sonst route manuell zambauen
+        sendHTTPHeader(clientSocket);
 
-        // char fileURL[100];
-
-        // // generate file URL
-        // getFileURL(route, fileURL);
-
-        // // read file
-        // FILE *file = fopen(fileURL, "r");
-        // if (!file) {
-        //   const char response[] = "HTTP/1.1 404 Not Found\r\n\n";
-        //   send(clientSocket, response, sizeof(response), 0);
-        //   continue;
-        // }
-
-        // // generate HTTP response header
-        // char resHeader[SIZE];
-
-        // // get current time
-        // char timeBuf[100];
-        // getTimeString(timeBuf);
-
-        // // generate mime type from file URL
-        // char mimeType[32];
-        // getMimeType(fileURL, mimeType);
-
-        // sprintf(resHeader,
-        //         "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: %s\r\n\n",
-        //         timeBuf, mimeType);
-        // int headerSize = strlen(resHeader);
-
-        // printf(" %s", mimeType);
-
-        // // Calculate file size
-        // fseek(file, 0, SEEK_END);
-        // long fsize = ftell(file);
-        // fseek(file, 0, SEEK_SET);
-
-        // // Allocates memory for response buffer and copies response
-        // header and
-        // // file contents to it
-        // char *resBuffer = (char *)malloc(fsize + headerSize);
-        // strcpy(resBuffer, resHeader);
-
-        // // Starting position of file contents in response buffer
-        // char *fileBuffer = resBuffer + headerSize;
-        // fread(fileBuffer, fsize, 1, file);
-
-        // send(clientSocket, resBuffer, fsize + headerSize, 0);
-        // free(resBuffer);
-        // fclose(file);
+        sendFileToClient(clientSocket, "htdocs/fallback.html");
       }
     }
     close(clientSocket);
