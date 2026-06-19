@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,4 +74,38 @@ void getTimeString(char *buf) {
   time_t now = time(0);
   struct tm tm = *gmtime(&now);
   strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+}
+
+// das verwenden wir um aus "Romeo%20und%20Julia" den String
+// "Romeo und Julia" zu machen
+void urlDecode(char *src, char *dest) {
+  while (*src) {
+    if (*src == '%' && isxdigit((unsigned char)src[1]) &&
+        isxdigit((unsigned char)src[2])) {
+
+      char hex[3] = {src[1], src[2], '\0'};
+      *dest++ = (char)strtol(hex, NULL, 16);
+      src += 3;
+    } else if (*src == '+') {
+      *dest++ = ' ';
+      src++;
+    } else {
+      *dest++ = *src++;
+    }
+  }
+
+  *dest = '\0';
+}
+
+void renderNameOfShow(char auffuehrungName[], int clientSocket) {
+
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  char decoded[100];
+
+  urlDecode(auffuehrungName, decoded);
+
+  snprintf(buffer, sizeof(buffer),
+           "<p>Wählen Sie einen Sitzplatz für die Aufführung %s</p>", decoded);
+  send(clientSocket, buffer, strlen(buffer), 0);
 }

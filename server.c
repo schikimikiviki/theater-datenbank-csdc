@@ -202,10 +202,33 @@ int main() {
                  param); // wir kopieren den String in die Session
         } else if (startsWith(query, "kundenID")) {
 
-          session.kundenNummer =
-              atoi(param); // wir kopieren den int in die Session
+          int kundenNr = atoi(param); // string zu int
 
-          // hier müssen wir jetzt prüfen ob das eine valide Kundennummer ist
+          session.kundenNummer = kundenNr;
+          // wir kopieren den int in die Session
+
+          // hier müssen wir jetzt prüfen ob das eine valide Kundennummer
+          // ist
+
+          int isRegistered = getIsRegistered(kundenNr, conn);
+
+          if (isRegistered) {
+            // wir leiten auf die nächste Seite weiter
+            char response[512];
+
+            snprintf(response, sizeof(response),
+                     "HTTP/1.1 302 Found\r\n"
+                     "Location: /sitzplatz.html\r\n"
+                     "Content-Length: 0\r\n"
+                     "\r\n");
+
+            send(clientSocket, response, strlen(response), 0);
+
+          } else {
+
+            // TODO: ansonsten kann man sich registrieren
+            // ==> sign up page anzeigen
+          }
         }
 
         sendHTTPHeader(clientSocket);
@@ -217,7 +240,20 @@ int main() {
 
         sendFileToClient(clientSocket, "htdocs/login-footer.html");
 
-      } else {
+      } else if (strcmp(route, "/sitzplatz") == 0 ||
+                 strcmp(route, "/sitzplatz.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/sitzplatz-header.html");
+
+        renderNameOfShow(session.auffuehrungName, clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/sitzplatz-footer.html");
+
+      }
+
+      else {
 
         // TODO: hier default seite anzeigen stattdessen
 
