@@ -43,6 +43,35 @@ void getAllShows(PGconn *conn, int clientSocket) {
     char *budget = PQgetvalue(res, i, 3);
     char *name = PQgetvalue(res, i, 4);
 
+    // wir schneiden 3 letzte Chars ab -> sonst Uhrzeit im Sekundenformat
+    char uhrzeitCopy[9];
+    strcpy(uhrzeitCopy, uhrzeit);
+    uhrzeitCopy[strlen(uhrzeitCopy) - 3] = 0;
+
+    // Datum formatieren: Wir möchten statt "2025-07-05" sowas "05.07.2025"
+    char datumCopy[11];
+    strcpy(datumCopy,
+           datum); // zuerst string kopieren um das original nicht zu ändern
+
+    char *token = strtok(datumCopy, "-");
+    char *parts[3]; // wir speichern 3 pointers weil es 3 strings sein werden
+    int count = 0;
+
+    while (token != NULL) {
+      parts[count] = token;
+      token = strtok(NULL, " - "); // immer weiter cutten
+      count++;
+    }
+
+    // neuen string zambauen
+    char datumNeu[11] = "";
+    strcat(datumNeu, parts[2]);
+    strcat(datumNeu, ".");
+    strcat(datumNeu, parts[1]);
+    strcat(datumNeu, ".");
+    strcat(datumNeu, parts[0]);
+
+    // ausgeben
     snprintf(buffer, sizeof(buffer),
              "<tr>"
              "<td><a href=\"/login.html?"
@@ -50,9 +79,10 @@ void getAllShows(PGconn *conn, int clientSocket) {
              "<td>%s</td>"
              "<td>%s</td>"
              "<td>%s</td>"
-             "<td>%s</td>"
+             "<td>%s €</td>"
              "</tr>",
-             name, datum, uhrzeit, name, datum, uhrzeit, regisseur, budget);
+             name, datum, uhrzeit, name, datumNeu, uhrzeitCopy, regisseur,
+             budget);
 
     send(clientSocket, buffer, strlen(buffer), 0);
   }

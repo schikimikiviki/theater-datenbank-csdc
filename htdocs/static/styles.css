@@ -13,7 +13,9 @@
 }
 
 .body-main{
-    background-color: aquamarine;
+    background-color: rgb(119, 213, 182);
+    margin: 0px; 
+    padding: 2%;
 }
 
 .body-description {
@@ -21,10 +23,7 @@
     text-align: justify;
 }
 
-body {
-    margin: 2%;
-    font-size: 18px;
-}
+
 
 .seat {
     width: 40px;
@@ -39,4 +38,32 @@ body {
 .seat-reserved {
     background-color: rgb(152, 51, 51);
     color: white;
+}
+
+.table-main {
+     width: 60vw;
+     table-layout: auto;
+}
+
+ tr:nth-child(even) {
+  background-color: #D6EEEE;
+}
+
+tr {
+  border-bottom: 1px solid #ddd;
+   width: fit-content;
+}
+
+td {
+padding: 2%; 
+ width: fit-content;
+
+}
+
+th {
+    text-transform: uppercase;
+}
+
+.main {
+    padding: 2%;
 }
