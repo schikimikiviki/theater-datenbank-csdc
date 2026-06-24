@@ -67,3 +67,22 @@ th {
 .main {
     padding: 2%;
 }
+
+.highlight {
+  background-color: rgb(119, 213, 182);
+  padding: 15px; 
+  width: 100vw; 
+  margin-left: -50px;
+  padding-left: 50px;
+
+}
+
+
+.highlight a {
+   color: whitesmoke;
+}
+
+.highlight:hover a {
+    color: rgb(23, 58, 101);
+    
+}

@@ -244,8 +244,19 @@ int main() {
 
               } else {
 
-                // TODO: ansonsten kann man sich registrieren
+                // wenn falsche Kundennummer: man kann sich registrieren
                 // ==> sign up page anzeigen
+
+                // wir leiten auf die nächste Seite weiter
+                char response[512];
+
+                snprintf(response, sizeof(response),
+                         "HTTP/1.1 302 Found\r\n"
+                         "Location: /register.html\r\n"
+                         "Content-Length: 0\r\n"
+                         "\r\n");
+
+                send(clientSocket, response, strlen(response), 0);
               }
             }
           }
@@ -340,6 +351,12 @@ int main() {
 
         sendImageHeader(clientSocket);
         sendFileToClient(clientSocket, path);
+      } else if (strcmp(route, "/register") == 0 ||
+                 strcmp(route, "/register.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/register.html");
       } else {
 
         // hier default seite anzeigen
