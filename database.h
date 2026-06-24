@@ -10,5 +10,6 @@ int getIsRegistered(int kundenNummer, PGconn *conn);
 int checkSeatAvailability(char seatNum[], PGconn *conn);
 int makeReservation(Session session, PGconn *conn);
 void getAllKuenstler(PGconn *conn, int clientSocket);
+void displayKuenstlerSelection(PGconn *conn, int clientSocket);
 
 #endif

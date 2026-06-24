@@ -359,7 +359,7 @@ int main() {
         sendFileToClient(clientSocket, "htdocs/register-header.html");
 
         // formulareingaben holen
-        getRegistrationData(clientSocket);
+        getRegistrationData(clientSocket, conn);
 
         sendFileToClient(clientSocket, "htdocs/register-footer.html");
       } else if (strcmp(route, "/kuenstler") == 0 ||

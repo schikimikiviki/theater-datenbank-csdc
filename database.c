@@ -268,3 +268,33 @@ void getAllKuenstler(PGconn *conn, int clientSocket) {
 
   PQclear(res);
 }
+
+void displayKuenstlerSelection(PGconn *conn, int clientSocket) {
+
+  PGresult *res = NULL;
+
+  res = PQexec(conn, "SELECT * from kuenstler;");
+
+  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+    terminate(1, res, conn);
+  }
+
+  //   int cols = PQnfields(res);
+  int rows = PQntuples(res);
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  for (int i = 0; i < rows; i++) {
+    char *angestelltenNr = PQgetvalue(res, i, 0);
+    char *kuenstlerName = PQgetvalue(res, i, 1);
+
+    int angestellenNummer = atoi(angestelltenNr);
+
+    // ausgeben
+    snprintf(buffer, sizeof(buffer), "<option value = \"%d\"> %s</ option>",
+             angestellenNummer, kuenstlerName);
+
+    send(clientSocket, buffer, strlen(buffer), 0);
+  }
+
+  PQclear(res);
+}

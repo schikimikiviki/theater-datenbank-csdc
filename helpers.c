@@ -215,7 +215,7 @@ void renderSuccess(int clientSocket, Session session) {
   send(clientSocket, buffer, strlen(buffer), 0);
 }
 
-void getRegistrationData(int clientSocket) {
+void getRegistrationData(int clientSocket, PGconn *conn) {
 
   char buffer[1024]; // Zwischenspeicher den wir definieren
 
@@ -228,6 +228,29 @@ void getRegistrationData(int clientSocket) {
 
            "<label for=\"gebdt\">Geburtsdatum:</label><br>"
            "<input type=\"text\" id=\"gebdt\" name=\"gebdt\"><br><br>"
+
+           // absenden
+           "<input type=\"submit\" value=\"Anmelden\">"
+           "</form>");
+
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  // Hier rendern wir jetzt das <select> für den Lieblingskünstler
+
+  snprintf(
+      buffer, sizeof(buffer),
+      "<label for=\"artist\">Wählen Sie:</label>< select name =\"artist\" id "
+      "=\"artist\" >");
+
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  displayKuenstlerSelection(conn, clientSocket);
+
+  snprintf(buffer, sizeof(buffer), "< /select >");
+
+  send(clientSocket, buffer, strlen(buffer), 0);
+
+  snprintf(buffer, sizeof(buffer),
 
            // absenden
            "<input type=\"submit\" value=\"Anmelden\">"

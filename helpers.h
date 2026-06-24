@@ -14,6 +14,6 @@ void renderReservation(int clientSocket, Session session);
 int generateRandomNumber();
 void renderSuccess(int clientSocket, Session session);
 void sendImageHeader(int clientSocket);
-void getRegistrationData(int clientSocket);
+void getRegistrationData(int clientSocket, PGconn *conn);
 
 #endif
