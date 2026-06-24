@@ -356,8 +356,27 @@ int main() {
 
         sendHTTPHeader(clientSocket);
 
-        sendFileToClient(clientSocket, "htdocs/register.html");
-      } else {
+        sendFileToClient(clientSocket, "htdocs/register-header.html");
+
+        // formulareingaben holen
+        getRegistrationData(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/register-footer.html");
+      } else if (strcmp(route, "/kuenstler") == 0 ||
+                 strcmp(route, "/kuenstler.html") == 0) {
+
+        sendHTTPHeader(clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/kuenstler-header.html");
+
+        // künstler listen
+        getAllKuenstler(conn, clientSocket);
+
+        sendFileToClient(clientSocket, "htdocs/kuenstler-footer.html");
+
+      }
+
+      else {
 
         // hier default seite anzeigen
 

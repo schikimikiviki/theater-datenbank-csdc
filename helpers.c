@@ -214,3 +214,24 @@ void renderSuccess(int clientSocket, Session session) {
            session.sitzplatz, session.reservierungsNummer);
   send(clientSocket, buffer, strlen(buffer), 0);
 }
+
+void getRegistrationData(int clientSocket) {
+
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  snprintf(buffer, sizeof(buffer),
+           "<form action=\"/login\" method=\"GET\">"
+
+           // felder
+           "<label for=\"svnr\">Sozialversicherungsnummer:</label><br>"
+           "<input type=\"text\" id=\"svnr\" name=\"svnr\"><br><br>"
+
+           "<label for=\"gebdt\">Geburtsdatum:</label><br>"
+           "<input type=\"text\" id=\"gebdt\" name=\"gebdt\"><br><br>"
+
+           // absenden
+           "<input type=\"submit\" value=\"Anmelden\">"
+           "</form>");
+
+  send(clientSocket, buffer, strlen(buffer), 0);
+}
