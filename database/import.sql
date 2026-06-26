@@ -4,7 +4,7 @@ CREATE TABLE ORT (
 );
 
 CREATE TABLE PERSON (
-    svnr_zahl TEXT NOT NULL UNIQUE,
+    svnr_zahl VARCHAR(10) NOT NULL UNIQUE,
     geburtsdatum DATE NOT NULL,
     vorname VARCHAR(255) NOT NULL,
     nachname VARCHAR(255) NOT NULL,
@@ -63,14 +63,13 @@ CREATE TABLE ROLLENBUCH (
 
 CREATE TABLE TELEFONNUMMER (
     telefonnummer VARCHAR(255),
-    svnr_zahl TEXT NOT NULL,
     UNIQUE (telefonnummer,svnr_zahl),
     FOREIGN KEY (svnr_zahl) REFERENCES PERSON(svnr_zahl)	
 );
 
 CREATE TABLE ANGESTELLTER (
     angestelltennummer INTEGER PRIMARY KEY,
-    svnr_zahl TEXT NOT NULL,
+    svnr_zahl VARCHAR(10) NOT NULL,
     geburtsdatum DATE NOT NULL,
     kontonummer INTEGER NOT NULL,
     bankleitzahl VARCHAR(255) NOT NULL,
@@ -98,7 +97,7 @@ CREATE TABLE BUEHNENARBEITER (
 
 CREATE TABLE BESUCHER (
     kundennummer INTEGER PRIMARY KEY,
-    svnr_zahl TEXT NOT NULL,
+    svnr_zahl VARCHAR(10) NOT NULL,
     geburtsdatum DATE NOT NULL,
     lieblingskuenstler_nr INTEGER NOT NULL,
     UNIQUE (svnr_zahl, geburtsdatum),
@@ -162,3 +161,39 @@ CREATE TABLE ENTLEIHT (
     FOREIGN KEY (angestelltennummer)
         REFERENCES ANGESTELLTER(angestelltennummer)
 );
+
+
+CREATE FUNCTION ENTLEIHT()
+RETURNS TRIGGER AS
+$$
+BEGIN
+    -- Keine Prüfung nötig, wenn nicht ausgeliehen
+    IF NEW.ENTLEIHT IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM Kuenstler
+        WHERE angestelltennummer = NEW.ENTLEIHT
+    )
+    AND NOT EXISTS (
+        SELECT 1
+        FROM Buehnenarbeiter
+        WHERE angestelltennummer = NEW.ENTLEIHT
+    ) THEN
+        RAISE EXCEPTION
+        'Nur Künstler oder Bühnenarbeiter dürfen Rollenbücher entleihen.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$
+LANGUAGE plpgsql;
+
+
+CREATE trigger TRG_ENTLEIHT
+BEFORE INSERT OR UPDATE
+ON Entleiht
+FOR EACH ROW
+EXECUTE FUNCTION ENTLEIHT();
