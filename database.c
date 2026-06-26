@@ -298,3 +298,151 @@ void displayKuenstlerSelection(PGconn *conn, int clientSocket) {
 
   PQclear(res);
 }
+
+int createOrt(PGconn *conn, char plz[], char ort[]) {
+
+  PGresult *res = NULL;
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    terminate(1, res, conn);
+  }
+
+  const char *query = "INSERT INTO ort (plz, ort) VALUES($1::integer, $2)";
+
+  const char *params[2] = {plz,
+                           ort}; // hier müssen immer strings übergeben werden
+
+  res = PQexecParams(conn, query, 2, NULL, params, NULL, NULL, 0);
+
+  if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+    terminate(1, res, conn);
+    return 0;
+
+  } else {
+    PQclear(res);
+    return 1;
+  }
+}
+
+int checkIfOrtExists(PGconn *conn, char plz[], char ort[]) {
+
+  PGresult *res = NULL;
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    terminate(1, res, conn);
+  }
+
+  const char *query = "SELECT ort FROM ort WHERE plz = $1::integer";
+
+  const char *params[1] = {plz};
+
+  res = PQexecParams(conn, query, 1, NULL, params, NULL, NULL, 0);
+
+  if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+    terminate(1, res, conn);
+  }
+
+  int rows = PQntuples(res);
+
+  if (rows == 1) {
+
+    // wir beachten nur die erste zurück gegebene Zeile
+
+    char *ortAusDb = PQgetvalue(res, 0, 0);
+
+    if (strcmp(ort, ortAusDb) == 0) {
+      // es ist der richtige Ort
+      PQclear(res);
+      return 1;
+    } else {
+      PQclear(res);
+      return 0;
+    }
+
+  } else {
+    PQclear(res);
+    return 0;
+  }
+}
+
+int makeRegistration(PGconn *conn, char svnr[], char gebdt[], int artistID,
+                     char vorname[], char nachname[], char strasse[],
+                     char hausnr[], char plz[], char ort[]) {
+  PGresult *personenResult = NULL;
+  PGresult *besucherResult = NULL;
+
+  if (PQstatus(conn) != CONNECTION_OK) {
+    terminate(1, besucherResult, conn);
+  }
+
+  // random kundennummer generieren
+  int kundennummer = generateRandomNumber();
+
+  // zuerst müssen wir eine Person erstellen, damit wir die Besucher query
+  // machen können
+  // außerdem müssen wir prüfen ob der Ort schon existiert => wenn nicht,
+  // müssen wir ihn anlegen
+
+  // queries vorbereiten
+  int exists = checkIfOrtExists(conn, plz, ort);
+
+  if (exists == 0) {
+    // der Ort existiert nicht => wir legen ihn an
+    createOrt(conn, plz, ort);
+  }
+
+  const char *personenQuery =
+      "INSERT INTO person (svnr_zahl, geburtsdatum, vorname, nachname, "
+      "strasse, hausnummer, plz) "
+      "VALUES($1, $2, $3, $4, $5, $6::integer, $7::integer);";
+
+  const char *besucherQuery = "INSERT INTO besucher ( "
+                              "kundennummer, svnr_zahl, geburtsdatum, "
+                              "lieblingskuenstler_nr) VALUES($1, $2, $3, $4)";
+
+  // umwandlungen der types in strings
+  char snum[32]; // char array für die kundennr
+  snprintf(snum, sizeof(snum), "%d", kundennummer); // umwandlung in string
+
+  char anum[32];                                // char array für die artistID
+  snprintf(anum, sizeof(anum), "%d", artistID); // umwandlung in string
+
+  const char *personenParams[7] = {svnr,    gebdt,  vorname, nachname,
+                                   strasse, hausnr, plz
+
+  };
+
+  const char *besucherParams[4] = {
+      snum,
+      svnr,
+      gebdt,
+      anum,
+  }; // hier müssen immer strings übergeben werden
+
+  // zuerst die Person POSTen
+  personenResult =
+      PQexecParams(conn, personenQuery, 7, NULL, personenParams, NULL, NULL, 0);
+
+  if (PQresultStatus(personenResult) != PGRES_COMMAND_OK) {
+    terminate(1, personenResult, conn);
+    return 0;
+
+  } else {
+    PQclear(personenResult);
+    // wenns ok ist -> wir machen noch eine weitere Query
+  }
+
+  besucherResult =
+      PQexecParams(conn, besucherQuery, 4, NULL, besucherParams, NULL, NULL, 0);
+
+  if (PQresultStatus(besucherResult) != PGRES_COMMAND_OK) {
+    terminate(1, besucherResult, conn);
+    return 0;
+
+  } else {
+    // wenn das geklappt hat => wir retournieren die Kundennummer damit man dan
+    // den Login machen kann
+    PQclear(besucherResult);
+    return kundennummer;
+  }
+}

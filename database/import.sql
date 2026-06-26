@@ -4,7 +4,7 @@ CREATE TABLE ORT (
 );
 
 CREATE TABLE PERSON (
-    svnr_zahl INTEGER NOT NULL UNIQUE,
+    svnr_zahl TEXT NOT NULL UNIQUE,
     geburtsdatum DATE NOT NULL,
     vorname VARCHAR(255) NOT NULL,
     nachname VARCHAR(255) NOT NULL,
@@ -63,14 +63,14 @@ CREATE TABLE ROLLENBUCH (
 
 CREATE TABLE TELEFONNUMMER (
     telefonnummer VARCHAR(255),
-    svnr_zahl INTEGER NOT NULL,
+    svnr_zahl TEXT NOT NULL,
     UNIQUE (telefonnummer,svnr_zahl),
     FOREIGN KEY (svnr_zahl) REFERENCES PERSON(svnr_zahl)	
 );
 
 CREATE TABLE ANGESTELLTER (
     angestelltennummer INTEGER PRIMARY KEY,
-    svnr_zahl INTEGER NOT NULL,
+    svnr_zahl TEXT NOT NULL,
     geburtsdatum DATE NOT NULL,
     kontonummer INTEGER NOT NULL,
     bankleitzahl VARCHAR(255) NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE BUEHNENARBEITER (
 
 CREATE TABLE BESUCHER (
     kundennummer INTEGER PRIMARY KEY,
-    svnr_zahl INTEGER NOT NULL,
+    svnr_zahl TEXT NOT NULL,
     geburtsdatum DATE NOT NULL,
     lieblingskuenstler_nr INTEGER NOT NULL,
     UNIQUE (svnr_zahl, geburtsdatum),

@@ -217,44 +217,58 @@ void renderSuccess(int clientSocket, Session session) {
 
 void getRegistrationData(int clientSocket, PGconn *conn) {
 
-  char buffer[1024]; // Zwischenspeicher den wir definieren
+  char buffer[1024];
 
+  // Formular ausgeben
   snprintf(buffer, sizeof(buffer),
-           "<form action=\"/login\" method=\"GET\">"
+           "<form action=\"/register\" method=\"POST\">"
 
-           // felder
            "<label for=\"svnr\">Sozialversicherungsnummer:</label><br>"
            "<input type=\"text\" id=\"svnr\" name=\"svnr\"><br><br>"
 
            "<label for=\"gebdt\">Geburtsdatum:</label><br>"
-           "<input type=\"text\" id=\"gebdt\" name=\"gebdt\"><br><br>"
+           "<input type=\"date\" id=\"gebdt\" name=\"gebdt\"><br><br>"
 
-           // absenden
-           "<input type=\"submit\" value=\"Anmelden\">"
-           "</form>");
+           "<label for=\"vorname\">Vorname:</label><br>"
+           "<input type=\"text\" id=\"vorname\" name=\"vorname\"><br><br>"
+
+           "<label for=\"nachname\">Nachname:</label><br>"
+           "<input type=\"text\" id=\"nachname\" name=\"nachname\"><br><br>"
+
+           "<label for=\"strasse\">Straße:</label><br>"
+           "<input type=\"text\" id=\"strasse\" name=\"strasse\"><br><br>"
+
+           "<label for=\"hausnr\">Hausnummer:</label><br>"
+           "<input type=\"text\" id=\"hausnr\" name=\"hausnr\"><br><br>"
+
+           "<label for=\"plz\">PLZ:</label><br>"
+           "<input type=\"text\" id=\"plz\" name=\"plz\"><br><br>"
+
+           "<label for=\"ort\">Ort:</label><br>"
+           "<input type=\"text\" id=\"ort\" name=\"ort\"><br><br>"
+
+           "<label for=\"artist\">Wählen Sie:</label><br>"
+           "<select name=\"artist\" id=\"artist\">");
 
   send(clientSocket, buffer, strlen(buffer), 0);
 
-  // Hier rendern wir jetzt das <select> für den Lieblingskünstler
-
-  snprintf(
-      buffer, sizeof(buffer),
-      "<label for=\"artist\">Wählen Sie:</label>< select name =\"artist\" id "
-      "=\"artist\" >");
-
-  send(clientSocket, buffer, strlen(buffer), 0);
-
+  // Optionen rendern
   displayKuenstlerSelection(conn, clientSocket);
 
-  snprintf(buffer, sizeof(buffer), "< /select >");
-
-  send(clientSocket, buffer, strlen(buffer), 0);
-
   snprintf(buffer, sizeof(buffer),
-
-           // absenden
+           "</select><br><br>"
            "<input type=\"submit\" value=\"Anmelden\">"
            "</form>");
+
+  send(clientSocket, buffer, strlen(buffer), 0);
+}
+
+void displayKundenNr(int clientSocket, int kundenNr) {
+
+  char buffer[1024]; // Zwischenspeicher den wir definieren
+
+  snprintf(buffer, sizeof(buffer), "<div>Ihre Kundennummer lautet: %d</div>",
+           kundenNr);
 
   send(clientSocket, buffer, strlen(buffer), 0);
 }

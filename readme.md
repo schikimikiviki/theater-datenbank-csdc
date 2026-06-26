@@ -38,3 +38,21 @@ rm server
 ```
 make run
 ```
+
+## Datenbank ausetzen
+
+```
+sudo su postgres
+```
+psql 
+```
+```
+CREATE database theater; 
+```
+```
+exit
+```
+```
+psql --username=postgres theater < ./database/import.sql 
+
+```

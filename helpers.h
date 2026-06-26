@@ -15,5 +15,7 @@ int generateRandomNumber();
 void renderSuccess(int clientSocket, Session session);
 void sendImageHeader(int clientSocket);
 void getRegistrationData(int clientSocket, PGconn *conn);
+void urlDecode(char *src, char *dest);
+void displayKundenNr(int clientSocket, int kundenNr);
 
 #endif
