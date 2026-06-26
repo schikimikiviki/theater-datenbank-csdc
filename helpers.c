@@ -207,11 +207,12 @@ void renderSuccess(int clientSocket, Session session) {
   char decodedName[100];
   urlDecode(session.auffuehrungName, decodedName);
 
-  snprintf(buffer, sizeof(buffer),
-           "<p>Sie haben gebucht:<br>Aufführung: %s am %s, um %s<br>Sitzplatz: "
-           "%s<br><b>Ihre Reservierungsnummer lautet: %d</b></p>",
-           decodedName, session.datumAuffuehrung, session.uhrzeitAuffuehrung,
-           session.sitzplatz, session.reservierungsNummer);
+  snprintf(
+      buffer, sizeof(buffer),
+      "<p>Sie haben gebucht:<hr><br>Aufführung: %s am %s, um %s<br>Sitzplatz: "
+      "%s<br><br/><b>Ihre Reservierungsnummer lautet: %d</b></p>",
+      decodedName, session.datumAuffuehrung, session.uhrzeitAuffuehrung,
+      session.sitzplatz, session.reservierungsNummer);
   send(clientSocket, buffer, strlen(buffer), 0);
 }
 

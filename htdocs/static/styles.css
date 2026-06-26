@@ -86,3 +86,11 @@ th {
     color: rgb(23, 58, 101);
     
 }
+
+#reservierung-success {
+
+    background-color: rgb(119, 213, 182);
+    margin: 0px; 
+    padding: 2%;
+
+}
