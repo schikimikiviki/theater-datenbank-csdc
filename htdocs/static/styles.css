@@ -168,7 +168,7 @@ body > h1 + form {
 .body-main {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 18px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(247, 251, 249, 0.94)),
@@ -182,7 +182,8 @@ body > h1 + form {
 .body-description {
   font-size: 1.08rem;
   max-width: 72ch;
-  text-align: left;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .body-main > a,
