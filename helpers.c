@@ -127,7 +127,11 @@ void renderNameOfShow(char auffuehrungName[], int clientSocket) {
 
 void createSeatNumbers(int clientSocket, PGconn *conn) {
 
-  send(clientSocket, "<table>\n", 8, 0);
+  send(clientSocket,
+       "<div class=\"seat-map-shell\">"
+       "<div class=\"stage-indicator\">Buehne</div>"
+       "<table class=\"seat-map\">\n",
+       79, 0);
 
   for (int r = 0; r < ROWS; r++) {
 
@@ -162,7 +166,7 @@ void createSeatNumbers(int clientSocket, PGconn *conn) {
     send(clientSocket, "</tr>\n", 6, 0);
   }
 
-  send(clientSocket, "</table>\n", 10, 0);
+  send(clientSocket, "</table></div>\n", 15, 0);
 }
 
 void renderReservation(int clientSocket, Session session) {
