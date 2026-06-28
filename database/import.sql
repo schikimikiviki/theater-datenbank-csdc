@@ -63,7 +63,8 @@ CREATE TABLE ROLLENBUCH (
 
 CREATE TABLE TELEFONNUMMER (
     telefonnummer VARCHAR(255),
-    UNIQUE (telefonnummer)	
+    UNIQUE (telefonnummer,svnr_zahl),
+    FOREIGN KEY (svnr_zahl) REFERENCES PERSON(svnr_zahl)	
 );
 
 CREATE TABLE ANGESTELLTER (

@@ -91,13 +91,13 @@ VALUES
 (4, '3333333333');
 
 INSERT INTO TELEFONNUMMER
-(telefonnummer)
+(telefonnummer, svnr_zahl)
 VALUES
-('06641234567'),
-('06641234568'),
-('06641234569'),
-('06641234570'),
-('06641234571');
+('06641234567', 100001),
+('06641234568', 100002),
+('06641234569', 100003),
+('06641234570', 100006),
+('06641234571', 100007);
 
 INSERT INTO BESUCHER
 (kundennummer, svnr_zahl, geburtsdatum, lieblingskuenstler_nr)
