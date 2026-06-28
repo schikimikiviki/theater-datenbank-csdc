@@ -44,6 +44,10 @@ make run
 ```
 sudo su postgres
 ```
+
+dann:
+
+```
 psql 
 ```
 ```
@@ -54,5 +58,4 @@ exit
 ```
 ```
 psql --username=postgres theater < ./database/import.sql 
-
 ```
