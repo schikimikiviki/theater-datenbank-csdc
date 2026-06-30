@@ -4,7 +4,7 @@
 #include "session.h"
 #include <libpq-fe.h>
 
-void getAllShows(PGconn *conn, int clientSocket);
+void getAllShows(PGconn *conn, int clientSocket, Session *sessionPtr);
 int getSvnrByKundennummer(int kundenNummer, PGconn *conn);
 int getIsRegistered(int kundenNummer, PGconn *conn);
 int checkSeatAvailability(char seatNum[], PGconn *conn);

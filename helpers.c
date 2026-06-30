@@ -79,11 +79,13 @@ void sendHTTPHeader(int clientSocket, Session *session) {
   getTimeString(timeBuf);
   char resHeader[SIZE];
   if (session) {
+    // wenn wir eingelogged sind -> id der session mitschicken
     sprintf(resHeader,
             "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: "
             "text/html\r\nSet-Cookie: sessionId=%s\r\n\r\n",
             timeBuf, session->sessionId);
   } else {
+    // wenn nicht -> normaler Header ohne ID
     sprintf(resHeader,
             "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\r\n",
             timeBuf);

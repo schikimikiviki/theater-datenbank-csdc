@@ -22,7 +22,7 @@ static void terminate(int code, PGresult *res, PGconn *conn) {
   exit(code);
 }
 
-void getAllShows(PGconn *conn, int clientSocket) {
+void getAllShows(PGconn *conn, int clientSocket, Session *sessionPtr) {
 
   PGresult *res = NULL;
 
@@ -71,18 +71,34 @@ void getAllShows(PGconn *conn, int clientSocket) {
     strcat(datumNeu, ".");
     strcat(datumNeu, parts[0]);
 
-    // ausgeben
-    snprintf(buffer, sizeof(buffer),
-             "<tr>"
-             "<td><a href=\"/login.html?"
-             "name=%s&datum=%s&uhrzeit=%s\">%s</a></td>"
-             "<td>%s</td>"
-             "<td>%s</td>"
-             "<td>%s</td>"
-             "<td>%s €</td>"
-             "</tr>",
-             name, datum, uhrzeit, name, datumNeu, uhrzeitCopy, regisseur,
-             budget);
+    if (sessionPtr && sessionPtr->loggedIn) {
+      // wenn wir eingelogged sind => direkt weiterleiten auf die nächste Page
+      snprintf(
+          buffer, sizeof(buffer),
+          "<tr>"
+          "<td><a "
+          "href=\"/sitzplatz.html?name=%s&datum=%s&uhrzeit=%s\">%s</a></td>"
+          "<td>%s</td>"
+          "<td>%s</td>"
+          "<td>%s</td>"
+          "<td>%s €</td>"
+          "</tr>",
+          name, datum, uhrzeit, name, datumNeu, uhrzeitCopy, regisseur, budget);
+
+    } else {
+      // ansonsten: weiter auf login.html
+      snprintf(buffer, sizeof(buffer),
+               "<tr>"
+               "<td><a href=\"/login.html?"
+               "name=%s&datum=%s&uhrzeit=%s\">%s</a></td>"
+               "<td>%s</td>"
+               "<td>%s</td>"
+               "<td>%s</td>"
+               "<td>%s €</td>"
+               "</tr>",
+               name, datum, uhrzeit, name, datumNeu, uhrzeitCopy, regisseur,
+               budget);
+    }
 
     send(clientSocket, buffer, strlen(buffer), 0);
   }

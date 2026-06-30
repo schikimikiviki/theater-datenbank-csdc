@@ -232,7 +232,7 @@ int main() {
       sendFileToClient(clientSocket, "htdocs/auffuehrungen-header.html");
 
       // Dynamische Tabellen-Zeilen
-      getAllShows(conn, clientSocket);
+      getAllShows(conn, clientSocket, session);
 
       // Footer-HTML
       sendFileToClient(clientSocket, "htdocs/auffuehrungen-footer.html");
@@ -314,6 +314,36 @@ int main() {
       if (!session->loggedIn) {
         sendRedirect(clientSocket, "/login.html", session->sessionId);
       } else {
+
+        // parameter parsen: Wenn wir direkt vom auffuehrungen.html weiter
+        // geleitet werden kriegen wir parameter mit und müssen diese in der
+        // Session setzen:
+
+        char *token = strtok(query, "&");
+        // wir müssen jetzt auf "&" splitten
+
+        while (token != NULL) {
+
+          char *value = strchr(token, '=');
+
+          if (value != NULL) {
+            *value = '\0';
+            value++;
+
+            if (strcmp(token, "name") == 0) {
+
+              strcpy(session->auffuehrungName,
+                     value); // wir kopieren den String in die Session
+
+            } else if (strcmp(token, "datum") == 0) {
+              strcpy(session->datumAuffuehrung, value);
+            } else if (strcmp(token, "uhrzeit") == 0) {
+              strcpy(session->uhrzeitAuffuehrung, value);
+            }
+          }
+
+          token = strtok(NULL, "&");
+        }
 
         sendHTTPHeader(clientSocket, session);
 
