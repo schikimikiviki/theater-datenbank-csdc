@@ -74,15 +74,85 @@ void sendFileToClient(int clientSocket, const char *filepath) {
   fclose(file);
 }
 
-void sendHTTPHeader(int clientSocket) {
-  // Funktion die HTTP-Header sendet
+void sendHTTPHeader(int clientSocket, Session *session) {
   char timeBuf[100];
   getTimeString(timeBuf);
   char resHeader[SIZE];
-  sprintf(resHeader,
-          "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\n",
-          timeBuf);
+  if (session) {
+    sprintf(resHeader,
+            "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: "
+            "text/html\r\nSet-Cookie: sessionId=%s\r\n\r\n",
+            timeBuf, session->sessionId);
+  } else {
+    sprintf(resHeader,
+            "HTTP/1.1 200 OK\r\nDate: %s\r\nContent-Type: text/html\r\n\r\n",
+            timeBuf);
+  }
   send(clientSocket, resHeader, strlen(resHeader), 0);
+}
+
+void sendRedirect(int clientSocket, const char *location,
+                  const char *sessionId) {
+  char response[512];
+  if (sessionId) {
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 302 Found\r\n"
+             "Location: %s\r\n"
+             "Set-Cookie: sessionId=%s\r\n"
+             "Content-Length: 0\r\n"
+             "\r\n",
+             location, sessionId);
+  } else {
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 302 Found\r\n"
+             "Location: %s\r\n"
+             "Content-Length: 0\r\n"
+             "\r\n",
+             location);
+  }
+  send(clientSocket, response, strlen(response), 0);
+}
+
+// diese Funktion nimmt einen HTTP Request entgegen
+// zb sowas wie:
+// GET /index.html HTTP/1.1
+// Host : localhost Cookie : theme = dark;
+// sessionId = ABC123XYZ;
+// lang = de
+
+// ===> wir möchten das so zamschneiden dass am ende nur die SessionID übrig
+// bleibt
+
+char *extractSessionId(const char *request) {
+  // strstr sucht nach einem Teilstring
+  const char *cookieHeader = strstr(request, "Cookie: ");
+  if (!cookieHeader)
+    return NULL;
+
+  const char *sessionIdStr = strstr(cookieHeader, "sessionId=");
+  if (!sessionIdStr)
+    return NULL;
+
+  sessionIdStr +=
+      strlen("sessionId="); // damit wir genau hinter "sessionId=" rauskommen
+
+  const char *end = sessionIdStr; // ende finden, wobei das Ende ";" ist
+  while (*end && *end != ';' && *end != '\r' && *end != '\n') {
+    end++;
+  }
+
+  size_t len = end - sessionIdStr;
+  if (len == 0 || len >= 64)
+    return NULL;
+
+  char *value =
+      malloc(len + 1); // den Speicher für genau diese Länge reservieren
+
+  // memcpy kopiert Bytes von einer Stelle woanders hin -> value ist das Ziel,
+  // Zeichen werden von sessionIDstr kopiert
+  memcpy(value, sessionIdStr, len);
+  value[len] = '\0'; // string beenden mit dem zero character
+  return value;      // pointer retournieren
 }
 
 void getTimeString(char *buf) {
@@ -93,7 +163,7 @@ void getTimeString(char *buf) {
 
 // das verwenden wir um aus "Romeo%20und%20Julia" den String
 // "Romeo und Julia" zu machen
-void urlDecode(char *src, char *dest) {
+void urlDecode(const char *src, char *dest) {
   while (*src) {
     if (*src == '%' && isxdigit((unsigned char)src[1]) &&
         isxdigit((unsigned char)src[2])) {
@@ -169,7 +239,7 @@ void createSeatNumbers(int clientSocket, PGconn *conn) {
   send(clientSocket, "</table></div>\n", 15, 0);
 }
 
-void renderReservation(int clientSocket, Session session) {
+void renderReservation(int clientSocket, const Session *session) {
   char buffer[1024]; // Zwischenspeicher den wir definieren
 
   // in der Session haben wir jetzt alle Informationen, die wir brauchen
@@ -177,16 +247,16 @@ void renderReservation(int clientSocket, Session session) {
 
   char decodedAuffuehrung[100];
 
-  urlDecode(session.auffuehrungName, decodedAuffuehrung);
+  urlDecode(session->auffuehrungName, decodedAuffuehrung);
 
   snprintf(buffer, sizeof(buffer), "<p>Aufführung:  %s</p>\n",
            decodedAuffuehrung);
   send(clientSocket, buffer, strlen(buffer), 0);
   snprintf(buffer, sizeof(buffer), "<p>Kundennummer:  %d</p>\n",
-           session.kundenNummer);
+           session->kundenNummer);
   send(clientSocket, buffer, strlen(buffer), 0);
   snprintf(buffer, sizeof(buffer), "<p>Sitzplatz:  %s</p>\n",
-           session.sitzplatz);
+           session->sitzplatz);
   send(clientSocket, buffer, strlen(buffer), 0);
 
   snprintf(buffer, sizeof(buffer),
@@ -205,18 +275,18 @@ void renderReservation(int clientSocket, Session session) {
 
 int generateRandomNumber() { return rand() % 1000000 + 1; }
 
-void renderSuccess(int clientSocket, Session session) {
+void renderSuccess(int clientSocket, const Session *session) {
   char buffer[1024]; // Zwischenspeicher den wir definieren
 
   char decodedName[100];
-  urlDecode(session.auffuehrungName, decodedName);
+  urlDecode(session->auffuehrungName, decodedName);
 
   snprintf(
       buffer, sizeof(buffer),
       "<p>Sie haben gebucht:<hr><br>Aufführung: %s am %s, um %s<br>Sitzplatz: "
       "%s<br><br/><b>Ihre Reservierungsnummer lautet: %d</b></p>",
-      decodedName, session.datumAuffuehrung, session.uhrzeitAuffuehrung,
-      session.sitzplatz, session.reservierungsNummer);
+      decodedName, session->datumAuffuehrung, session->uhrzeitAuffuehrung,
+      session->sitzplatz, session->reservierungsNummer);
   send(clientSocket, buffer, strlen(buffer), 0);
 }
 
